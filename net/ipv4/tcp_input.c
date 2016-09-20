@@ -900,9 +900,10 @@ static void tcp_update_reordering(struct sock *sk, const int metric,
 /* This must be called before lost_out is incremented */
 static void tcp_verify_retransmit_hint(struct tcp_sock *tp, struct sk_buff *skb)
 {
-	if (!tp->retransmit_skb_hint ||
-	    before(TCP_SKB_CB(skb)->seq,
-		   TCP_SKB_CB(tp->retransmit_skb_hint)->seq))
+	if ((!tp->retransmit_skb_hint && tp->retrans_out >= tp->lost_out) ||
+	    (tp->retransmit_skb_hint &&
+	     before(TCP_SKB_CB(skb)->seq,
+		    TCP_SKB_CB(tp->retransmit_skb_hint)->seq)))
 		tp->retransmit_skb_hint = skb;
 
 	if (!tp->lost_out ||
@@ -1691,8 +1692,11 @@ tcp_sacktag_write_queue(struct sock *sk, const struct sk_buff *ack_skb,
 		}
 
 		/* Ignore very old stuff early */
-		if (!after(sp[used_sacks].end_seq, prior_snd_una))
+		if (!after(sp[used_sacks].end_seq, prior_snd_una)) {
+			if (i == 0)
+				first_sack_index = -1;
 			continue;
+		}
 
 		used_sacks++;
 	}
@@ -2912,64 +2916,13 @@ static void tcp_fastretrans_alert(struct sock *sk, const int acked,
 	*rexmit = REXMIT_LOST;
 }
 
-/* Kathleen Nichols' algorithm for tracking the minimum value of
- * a data stream over some fixed time interval. (E.g., the minimum
- * RTT over the past five minutes.) It uses constant space and constant
- * time per update yet almost always delivers the same minimum as an
- * implementation that has to keep all the data in the window.
- *
- * The algorithm keeps track of the best, 2nd best & 3rd best min
- * values, maintaining an invariant that the measurement time of the
- * n'th best >= n-1'th best. It also makes sure that the three values
- * are widely separated in the time window since that bounds the worse
- * case error when that data is monotonically increasing over the window.
- *
- * Upon getting a new min, we can forget everything earlier because it
- * has no value - the new min is <= everything else in the window by
- * definition and it's the most recent. So we restart fresh on every new min
- * and overwrites 2nd & 3rd choices. The same property holds for 2nd & 3rd
- * best.
- */
 static void tcp_update_rtt_min(struct sock *sk, u32 rtt_us)
 {
-	const u32 now = tcp_time_stamp, wlen = sysctl_tcp_min_rtt_wlen * HZ;
-	struct rtt_meas *m = tcp_sk(sk)->rtt_min;
-	struct rtt_meas rttm = { .rtt = (rtt_us ? : 1), .ts = now };
-	u32 elapsed;
+	struct tcp_sock *tp = tcp_sk(sk);
+	u32 wlen = sysctl_tcp_min_rtt_wlen * HZ;
 
-	/* Check if the new measurement updates the 1st, 2nd, or 3rd choices */
-	if (unlikely(rttm.rtt <= m[0].rtt))
-		m[0] = m[1] = m[2] = rttm;
-	else if (rttm.rtt <= m[1].rtt)
-		m[1] = m[2] = rttm;
-	else if (rttm.rtt <= m[2].rtt)
-		m[2] = rttm;
-
-	elapsed = now - m[0].ts;
-	if (unlikely(elapsed > wlen)) {
-		/* Passed entire window without a new min so make 2nd choice
-		 * the new min & 3rd choice the new 2nd. So forth and so on.
-		 */
-		m[0] = m[1];
-		m[1] = m[2];
-		m[2] = rttm;
-		if (now - m[0].ts > wlen) {
-			m[0] = m[1];
-			m[1] = rttm;
-			if (now - m[0].ts > wlen)
-				m[0] = rttm;
-		}
-	} else if (m[1].ts == m[0].ts && elapsed > wlen / 4) {
-		/* Passed a quarter of the window without a new min so
-		 * take 2nd choice from the 2nd quarter of the window.
-		 */
-		m[2] = m[1] = rttm;
-	} else if (m[2].ts == m[1].ts && elapsed > wlen / 2) {
-		/* Passed half the window without a new min so take the 3rd
-		 * choice from the last half of the window.
-		 */
-		m[2] = rttm;
-	}
+	minmax_running_min(&tp->rtt_min, wlen, tcp_time_stamp,
+			   rtt_us ? : jiffies_to_usecs(1));
 }
 
 static inline bool tcp_ack_update_rtt(struct sock *sk, const int flag,
@@ -3548,10 +3501,8 @@ static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
 	}
 }
 
-/* This routine deals with acks during a TLP episode.
- * We mark the end of a TLP episode on receiving TLP dupack or when
- * ack is after tlp_high_seq.
- * Ref: loss detection algorithm in draft-dukkipati-tcpm-tcp-loss-probe.
+/* This routine deals with acks during a TLP episode and ends an episode by
+ * resetting tlp_high_seq. Ref: TLP algorithm in draft-ietf-tcpm-rack
  */
 static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag)
 {
@@ -3560,7 +3511,10 @@ static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag)
 	if (before(ack, tp->tlp_high_seq))
 		return;
 
-	if (flag & FLAG_DSACKING_ACK) {
+	if (!tp->tlp_retrans) {
+		/* TLP of new data has been acknowledged */
+		tp->tlp_high_seq = 0;
+	} else if (flag & FLAG_DSACKING_ACK) {
 		/* This DSACK means original and TLP probe arrived; no loss */
 		tp->tlp_high_seq = 0;
 	} else if (after(ack, tp->tlp_high_seq)) {
@@ -4511,7 +4465,11 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
 	if (tcp_ooo_try_coalesce(sk, tp->ooo_last_skb,
 				 skb, &fragstolen)) {
 coalesce_done:
-		tcp_grow_window(sk, skb);
+		/* For non sack flows, do not grow window to force DUPACK
+		 * and trigger fast retransmit.
+		 */
+		if (tcp_is_sack(tp))
+			tcp_grow_window(sk, skb);
 		kfree_skb_partial(skb, fragstolen);
 		skb = NULL;
 		goto add_sack;
@@ -4591,7 +4549,11 @@ add_sack:
 		tcp_sack_new_ofo_skb(sk, seq, end_seq);
 end:
 	if (skb) {
-		tcp_grow_window(sk, skb);
+		/* For non sack flows, do not grow window to force DUPACK
+		 * and trigger fast retransmit.
+		 */
+		if (tcp_is_sack(tp))
+			tcp_grow_window(sk, skb);
 		skb_set_owner_r(skb, sk);
 	}
 }
