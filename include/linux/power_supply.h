@@ -1,5 +1,5 @@
 /*
- *  Universal power supply monitor class
+ * Universal power supply monitor class
  *
  *  Copyright © 2007  Anton Vorontsov <cbou@mail.ru>
  *  Copyright © 2004  Szabolcs Gyurko
@@ -113,6 +113,11 @@ enum {
 	POWER_SUPPLY_PL_USBIN_USBIN,
 	POWER_SUPPLY_PL_USBIN_USBIN_EXT,
 	POWER_SUPPLY_PL_USBMID_USBMID,
+};
+
+enum {
+	POWER_SUPPLY_PL_STACKED_BATFET,
+	POWER_SUPPLY_PL_NON_STACKED_BATFET,
 };
 
 enum power_supply_property {
@@ -268,6 +273,8 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_ENABLE_JEITA_DETECTION,
 	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
 	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+	POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE,
+	POWER_SUPPLY_PROP_MIN_ICL,
 	POWER_SUPPLY_PROP_RERUN_APSD,
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT,
