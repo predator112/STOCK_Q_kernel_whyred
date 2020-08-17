@@ -11,10 +11,10 @@ jobs:
            git clone https://github.com/predator112/STOCK_Q_kernel_whyred.git --depth=1 kernel
            cd kernel
            git clone https://github.com/fiqri19102002/myscripts.git -b master
-           chmod +x myscripts/gcc.sh
+           chmod +x myscripts/gcc-setup.sh
            chmod +x myscripts/build-gcc.sh
            source ./myscripts/gcc.sh
-           ./myscripts/build-gcc.sh
+           ./myscripts/build-gcc-setup.sh
 workflows:
   version: 2.1
   cooking:
