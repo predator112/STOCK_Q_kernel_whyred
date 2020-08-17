@@ -11,6 +11,8 @@ jobs:
            git clone https://github.com/predator112/STOCK_Q_kernel_whyred.git kernel
            cd kernel
            git clone https://github.com/fiqri19102002/myscripts.git -b master
+           chmod +x myscripts/gcc-setup.sh
+           chmod +x myscripts/build-gcc.sh
            source ./myscripts/gcc-setup.sh
            ./myscripts/build-gcc.sh
 workflows:
