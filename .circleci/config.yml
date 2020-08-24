@@ -11,10 +11,10 @@ jobs:
            git clone https://github.com/predator112/STOCK_Q_kernel_whyred.git -b android-10-eas kernel
            cd kernel
            git clone https://github.com/PREDATOR-project/myscripts.git -b master
-           chmod +x myscripts/gcc-setup.sh
+           chmod +x myscripts/clang-setup.sh
            chmod +x myscripts/build-gcc-eas.sh
-           source ./myscripts/gcc-setup-eas.sh
-           ./myscripts/build-gcc.sh
+           source ./myscripts/clang-setup.sh
+           ./myscripts/build-gcc-eas.sh
 workflows:
   version: 2.1
   cooking:
