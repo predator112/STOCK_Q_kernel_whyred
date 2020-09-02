@@ -1255,7 +1255,8 @@
 		qcom,cpulist = <&CPU0 &CPU1 &CPU2 &CPU3>;
 		qcom,target-dev = <&memlat_cpu0>;
 		qcom,core-dev-table =
-			< 902400 762 >,
+			< 300000 381 >,
+                        < 902400 762 >,
 			< 1401600 2086 >,
 			< 1881600 3879 >;
 	};
@@ -1265,6 +1266,7 @@
 		qcom,cpulist = <&CPU4 &CPU5 &CPU6 &CPU7>;
 		qcom,target-dev = <&memlat_cpu4>;
 		qcom,core-dev-table =
+                      < 300000 381 >,
                       < 633600 572 >,
 			< 902400 762 >,
 			< 1113600 762 >,
@@ -1277,10 +1279,12 @@
 		mincpubw-cpufreq {
 			target-dev = <&mincpubw>;
 			cpu-to-dev-map-0 =
+                                < 300000 381 >,
 				< 633600 762 >,
 				< 1401600 1571 >,
 				< 1881600 2929 >;
 			cpu-to-dev-map-4 =
+                                < 300000 381 >,
 				< 633600 572 >,
 				< 902400 762 >,
 				< 1113600 762 >,
@@ -1433,6 +1437,7 @@
 		qcom,governor-per-policy;
 
 		qcom,cpufreq-table-0 =
+                        <  300000 >,
 			<  633600 >,
 			<  902400 >,
 			< 1113600 >,
@@ -1441,6 +1446,7 @@
 			< 1612800 >;
 
 		qcom,cpufreq-table-4 =
+                        <  300000 >,
 			<  633600 >,
 			<  902400 >,
 			< 1113600 >,
