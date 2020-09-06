@@ -15,6 +15,7 @@
 #include <linux/radix-tree.h>
 #include <linux/bitmap.h>
 #include <linux/irqdomain.h>
+#include <linux/wakeup_reason.h>
 
 #include "internals.h"
 
@@ -26,8 +27,8 @@ static struct lock_class_key irq_desc_lock_class;
 #if defined(CONFIG_SMP)
 static void __init init_irq_default_affinity(void)
 {
-	alloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
-	cpumask_setall(irq_default_affinity);
+	zalloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
+	cpumask_set_cpu(0, irq_default_affinity);
 }
 #else
 static void __init init_irq_default_affinity(void)
@@ -339,16 +340,25 @@ void irq_init_desc(unsigned int irq)
 /**
  * generic_handle_irq - Invoke the handler for a particular irq
  * @irq:	The irq number to handle
- *
+ * returns:
+ * 	negative on error
+ *	0 when the interrupt handler was not called
+ *	1 when the interrupt handler was called
  */
+
 int generic_handle_irq(unsigned int irq)
 {
 	struct irq_desc *desc = irq_to_desc(irq);
 
 	if (!desc)
 		return -EINVAL;
-	generic_handle_irq_desc(desc);
-	return 0;
+
+	if (unlikely(logging_wakeup_reasons_nosync()))
+		return log_possible_wakeup_reason(irq,
+				desc,
+				generic_handle_irq_desc);
+
+	return generic_handle_irq_desc(desc);
 }
 EXPORT_SYMBOL_GPL(generic_handle_irq);
 
