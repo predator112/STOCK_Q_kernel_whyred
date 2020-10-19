@@ -49,7 +49,7 @@ config CPU_FREQ_STAT_DETAILS
 choice
 	prompt "Default CPUFreq governor"
 	default CPU_FREQ_DEFAULT_GOV_USERSPACE if ARM_SA1100_CPUFREQ || ARM_SA1110_CPUFREQ
-	default CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
+	default CPU_FREQ_DEFAULT_GOV_PERFORMANCE
 	help
 	  This option sets which CPUFreq governor shall be loaded at
 	  startup. If in doubt, select 'performance'.
@@ -82,26 +82,26 @@ config CPU_FREQ_DEFAULT_GOV_USERSPACE
 config CPU_FREQ_DEFAULT_GOV_ONDEMAND
 	bool "ondemand"
 	select CPU_FREQ_GOV_ONDEMAND
-	select CPU_FREQ_GOV_SCHEDUTIL
+	select CPU_FREQ_GOV_PERFORMANCE
 	help
 	  Use the CPUFreq governor 'ondemand' as default. This allows
 	  you to get a full dynamic frequency capable system by simply
 	  loading your cpufreq low-level hardware driver.
 	  Be aware that not all cpufreq drivers support the ondemand
 	  governor. If unsure have a look at the help section of the
-	  driver. Fallback governor will be the schedutil governor.
+	  driver. Fallback governor will be the performance governor.
 
 config CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
 	bool "conservative"
 	select CPU_FREQ_GOV_CONSERVATIVE
-	select CPU_FREQ_GOV_SCHEDUTIL
+	select CPU_FREQ_GOV_PERFORMANCE
 	help
 	  Use the CPUFreq governor 'conservative' as default. This allows
 	  you to get a full dynamic frequency capable system by simply
 	  loading your cpufreq low-level hardware driver.
 	  Be aware that not all cpufreq drivers support the conservative
 	  governor. If unsure have a look at the help section of the
-	  driver. Fallback governor will be the schedutil governor.
+	  driver. Fallback governor will be the performance governor.
 
 config CPU_FREQ_DEFAULT_GOV_INTERACTIVE
 	bool "interactive"
@@ -119,7 +119,7 @@ config CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
 	help
 	  Use the 'schedutil' CPUFreq governor by default. If unsure,
 	  have a look at the help section of that governor. The fallback
-	  governor will be 'schedutil'.
+	  governor will be 'performance'.
 
 config CPU_FREQ_DEFAULT_GOV_ALUCARDSCHED
 	bool "alucardsched"
@@ -157,17 +157,10 @@ config CPU_FREQ_DEFAULT_GOV_SCHEDALUCARD
 	select CPU_FREQ_GOV_SCHEDALUCARD
 	select CPU_FREQ_GOV_PERFORMANCE
 	help
-	  Use the 'pwrutilx' CPUFreq governor by default. If unsure,
+	  Use the 'schedalucard' CPUFreq governor by default. If unsure,
 	  have a look at the help section of that governor. The fallback
 	  governor will be 'performance'.
-	  
-config CPU_FREQ_DEFAULT_GOV_SCHEDHORIZON
-	bool "schedhorizon"
-	depends on SMP
-	select CPU_FREQ_GOV_SCHEDHORIZON
-	select CPU_FREQ_GOV_SCHEDUTIL
-	  have a look at the help section of that governor. The fallback
-	  governor will be 'schedutil'.
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
