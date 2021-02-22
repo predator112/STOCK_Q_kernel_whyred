@@ -33,6 +33,7 @@
 #include <linux/mutex.h>
 #include <linux/shmem_fs.h>
 #include "ashmem.h"
+#include <uapi/linux/personality.h>
 
 #define ASHMEM_NAME_PREFIX "dev/ashmem/"
 #define ASHMEM_NAME_PREFIX_LEN (sizeof(ASHMEM_NAME_PREFIX) - 1)
@@ -313,7 +314,7 @@ static ssize_t ashmem_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	 * ashmem_release is called.
 	 */
 	mutex_unlock(&ashmem_mutex);
-	ret = vfs_iter_read(asma->file, iter, &iocb->ki_pos, 0);
+	ret = vfs_iter_read(asma->file, iter, &iocb->ki_pos);
 	mutex_lock(&ashmem_mutex);
 	if (ret > 0)
 		asma->file->f_pos = iocb->ki_pos;
