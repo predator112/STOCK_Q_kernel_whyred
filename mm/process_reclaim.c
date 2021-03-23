@@ -20,6 +20,7 @@
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
 #include <linux/vmpressure.h>
+#include <linux/moduleparam.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/process_reclaim.h>
@@ -240,6 +241,68 @@ static int vmpressure_notifier(struct notifier_block *nb,
 static struct notifier_block vmpr_nb = {
 	.notifier_call = vmpressure_notifier,
 };
+
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "lowmemorykiller."
+/*
+ * Needed to prevent Android from thinking there's no LMK and thus rebooting.
+ * Taken from Simple LMK (@kerneltoast).
+ */
+static int lowmem_minfree[6] = {
+	3 * 512,	/* 6MB */
+	2 * 1024,	/* 8MB */
+	4 * 1024,	/* 16MB */
+	16 * 1024,	/* 64MB */
+};
+static int lowmem_minfree_size = 4;
+module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size, S_IRUGO | S_IWUSR);
+
+static int enable_lmk = 1;
+module_param_named(enable_lmk, enable_lmk, int, 0644);
+
+static short adj_max_shift = 353;
+module_param_named(adj_max_shift, adj_max_shift, short, 0644);
+
+static int enable_adaptive_lmk = 0;
+module_param_named(enable_adaptive_lmk, enable_adaptive_lmk, int, 0644);
+
+static int vmpressure_file_min;
+module_param_named(vmpressure_file_min, vmpressure_file_min, int, 0644);
+
+static int oom_reaper = 1;
+module_param_named(oom_reaper, oom_reaper, int, 0644);
+
+static int lowmem_shrinker_seeks = 32;
+module_param_named(cost, lowmem_shrinker_seeks, int, 0644);
+
+static short lowmem_adj[6] = {
+	0,
+	1,
+	6,
+	12,
+};
+static int lowmem_adj_size = 4;
+module_param_array_named(adj, lowmem_adj, short, &lowmem_adj_size, 0644);
+
+static u32 lowmem_debug_level = 0;
+module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
+
+static int lmk_fast_run = 1;
+module_param_named(lmk_fast_run, lmk_fast_run, int, S_IRUGO | S_IWUSR);
+
+static int __init process_reclaim_prlmk_init(void)
+{
+	vmpressure_notifier_register(&vmpr_nb);
+	return 0;
+}
+
+static void __exit process_reclaim_prlmk_exit(void)
+{
+	vmpressure_notifier_unregister(&vmpr_nb);
+}
+
+module_init(process_reclaim_prlmk_init);
+module_exit(process_reclaim_prlmk_exit);
 
 static int __init process_reclaim_init(void)
 {
