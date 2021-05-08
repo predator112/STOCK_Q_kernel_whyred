@@ -760,13 +760,10 @@ static inline void crypto_xor_cpy(u8 *dst, const u8 *src1, const u8 *src2,
 #define hlist_add_behind(a, b) hlist_add_after(b, a)
 #endif
 
-<<<<<<< HEAD:net/wireguard/compat/compat.h
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
 #define totalram_pages() totalram_pages
 #endif
 
-=======
->>>>>>> ed56ffaed27b... wireguard: Fix build after merge 9321bf2585daf5181cfde9558631771830c7d9cc:net/wireguard/src/compat/compat.h
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 struct __kernel_timespec {
 	int64_t tv_sec, tv_nsec;
