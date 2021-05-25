@@ -43,7 +43,6 @@
 #include <linux/cpufreq.h>
 #include <linux/mdss_io_util.h>
 #include <linux/wakelock.h>
-#include <linux/proc_fs.h>
 #include "gf_spi.h"
 
 #if defined(USE_SPI_BUS)
@@ -67,8 +66,6 @@
 #define	CHRD_DRIVER_NAME	"goodix_fp_spi"
 #define	CLASS_NAME		    "goodix_fp"
 
-#define PROC_NAME  "hwinfo"
-
 #define N_SPI_MINORS		32	/* ... up to 256 */
 static int SPIDEV_MAJOR;
 
@@ -77,7 +74,6 @@ static LIST_HEAD(device_list);
 static DEFINE_RT_MUTEX(device_list_lock);
 static struct wake_lock fp_wakelock;
 static struct gf_dev gf;
-static struct proc_dir_entry *proc_entry;
 
 #if 0
 static struct gf_key_map maps[] = {
@@ -812,14 +808,6 @@ static int gf_probe(struct platform_device *pdev)
 
 	wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
 
-	proc_entry = proc_create(PROC_NAME, 0644, NULL, &proc_file_ops);
-	if (NULL == proc_entry) {
-		printk("gf3258 Couldn't create proc entry!");
-		return -ENOMEM;
-	} else {
-		printk("gf3258 Create proc entry success!");
-	}
-
 	pr_info("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
 
 	return status;
@@ -867,7 +855,6 @@ static int gf_remove(struct platform_device *pdev)
 	list_del(&gf_dev->device_entry);
 	device_destroy(gf_class, gf_dev->devt);
 	clear_bit(MINOR(gf_dev->devt), minors);
-	remove_proc_entry(PROC_NAME,NULL);
 
 	rt_mutex_unlock(&device_list_lock);
 
