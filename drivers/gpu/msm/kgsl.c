@@ -265,9 +265,7 @@ kgsl_mem_entry_create(void)
 
 		/* put this ref in the caller functions after init */
 		kref_get(&entry->refcount);
-		atomic_set(&entry->map_count, 0);
 	}
-
 	return entry;
 }
 #ifdef CONFIG_DMA_SHARED_BUFFER
@@ -2211,16 +2209,12 @@ static int kgsl_setup_anon_useraddr(struct kgsl_pagetable *pagetable,
 		entry->memdesc.gpuaddr = (uint64_t)  entry->memdesc.useraddr;
 	}
 
-<<<<<<< HEAD
-	return memdesc_sg_virt(&entry->memdesc);
-=======
-	ret = memdesc_sg_virt(&entry->memdesc, hostptr);
+	ret = memdesc_sg_virt(&entry->memdesc);
 
 	if (ret && kgsl_memdesc_use_cpu_map(&entry->memdesc))
 		kgsl_mmu_put_gpuaddr(&entry->memdesc);
 
 	return ret;
->>>>>>> 21e5961f01ca... Merge tag 'LA.UM.9.2.r1-03300-SDMxx0.0' of https://source.codeaurora.org/quic/la/kernel/msm-4.4 into kernel-eas
 }
 
 static int match_file(const void *p, struct file *file, unsigned int fd)
